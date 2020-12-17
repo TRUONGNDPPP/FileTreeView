@@ -6,11 +6,11 @@ import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.web.HTMLEditor;
 import javafx.stage.Stage;
 import treeview.FileTreeItem;
 
 import java.io.File;
+import java.util.List;
 
 public class Main extends Application {
 
@@ -54,11 +54,23 @@ public class Main extends Application {
 
             /* Adding a TreeView to the left of the center section */
             TreeView<File> treeView = new TreeView<File>(
-                    new FileTreeItem(new File("C:\\Users\\admin\\Desktop\\TreeView")));
+                    new FileTreeItem(new File("D:\\")));
+            /* Text viewer */
+            TextArea textViewer = new TextArea();
+
+            treeView.setOnMouseClicked(event -> {
+                File chosenFile = treeView.getSelectionModel().getSelectedItem().getValue();
+                if(chosenFile.getAbsolutePath().endsWith(".txt")) {
+                    FileReader reader = new FileReader();
+                    List<String> lines = reader.read(chosenFile);
+                    lines.forEach(textViewer::appendText);
+                }
+            });
+
             /* Creating a SplitPane and adding file tree and file view. */
             SplitPane splitView = new SplitPane();
             splitView.getItems().add(treeView);
-            splitView.getItems().add(new HTMLEditor());
+            splitView.getItems().add(textViewer);
 
             /* Create a root node as BorderPane. */
             BorderPane root = new BorderPane();
