@@ -3,13 +3,25 @@ package main;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.BorderPane;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.*;
+import javafx.scene.web.WebView;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import treeview.FileTreeItem;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.List;
 
 public class Main extends Application {
@@ -46,28 +58,70 @@ public class Main extends Application {
             about.setOnAction(new EventHandler<ActionEvent>() {
                 @Override
                 public void handle(ActionEvent event) {
-                    // show helping info
+                    TextArea about = new TextArea();
+                    about.appendText("Double click on text files or images to see the content of them");
+                    about.setWrapText(true);
+                    Scene scene = new Scene(about, 300, 300);
+                    Stage stage = new Stage();
+                    stage.setTitle("About program");
+                    stage.setScene(scene);
+                    stage.show();
                 }
             });
 
             menu.getMenus().addAll(menuFile, menuHelp);
 
-            /* Adding a TreeView to the left of the center section */
+            /* Adding a TreeView and Webview */
             TreeView<File> treeView = new TreeView<File>(
                     new FileTreeItem(new File("D:\\")));
-            /* Text viewer */
+            /* Text viewer*/
             TextArea textViewer = new TextArea();
 
-            treeView.setOnMouseClicked(event -> {
-                File chosenFile = treeView.getSelectionModel().getSelectedItem().getValue();
-                if(chosenFile.getAbsolutePath().endsWith(".txt")) {
-                    FileReader reader = new FileReader();
-                    List<String> lines = reader.read(chosenFile);
-                    lines.forEach(textViewer::appendText);
+            treeView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+                @Override
+                public void handle(MouseEvent event) {
+                    if(event.getClickCount() == 2) {
+                        File chosenFile = treeView.getSelectionModel().getSelectedItem().getValue();
+
+                        // read text file
+                        if(isTextFile(chosenFile.getAbsolutePath())) {
+                            String line;
+                            try {
+                                textViewer.clear();
+                                BufferedReader br = new BufferedReader(new FileReader(chosenFile));
+                                while ((line = br.readLine()) != null) {
+                                    textViewer.appendText(line);
+                                }
+                                textViewer.setWrapText(true);
+                                br.close();
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+
+                        //read images
+                        if(isImage(chosenFile.getAbsolutePath())) {
+                            Image image = new Image(chosenFile.toURI().toString());
+                            ImageView imageView = new ImageView();
+                            imageView.setImage(image);
+                            //Setting the image view parameters
+                            imageView.setX(10);
+                            imageView.setY(10);
+                            imageView.setFitWidth(575);
+                            imageView.setPreserveRatio(true);
+                            //Setting the Scene object
+                            Group root = new Group(imageView);
+                            Scene scene = new Scene(root, 595, 370);
+                            Stage stage = new Stage();
+                            stage.setTitle("Displaying Image");
+                            stage.setScene(scene);
+                            stage.show();
+                        }
+                    }
                 }
             });
 
-            /* Creating a SplitPane and adding file tree and file view. */
+            /* Creating a SplitPane and adding file tree and file viewer */
             SplitPane splitView = new SplitPane();
             splitView.getItems().add(treeView);
             splitView.getItems().add(textViewer);
@@ -85,6 +139,16 @@ public class Main extends Application {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private boolean isTextFile(String fileName) {
+        String[] extension = {".txt", ".doc", ".docx"};
+        return Arrays.stream(extension).anyMatch(entry -> fileName.endsWith(entry));
+    }
+
+    private boolean isImage(String fileName) {
+        String[] extension = {".jpeg", ".jpg", ".png", ".svg", ".tiff", ".gif", ".webp"};
+        return Arrays.stream(extension).anyMatch(entry -> fileName.endsWith(entry));
     }
 
     public static void main(String[] args) {
